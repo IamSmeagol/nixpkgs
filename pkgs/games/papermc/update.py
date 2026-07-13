@@ -11,7 +11,6 @@ import requests
 HEADER = "User-Agent: nixpkgs/1.0.0 https://github.com/nixos/nixpkgs"
 
 
-
 class Version:
     def __init__(self, name: str):
         self.name: str = name
@@ -50,7 +49,7 @@ class VersionManager:
             return
 
 
-        release_versions = response.json()["versions"]
+        release_versions = response.json()["versions"][::-1]
 
         for version_name in release_versions:
             version_id = version_name["version"]["id"]
@@ -106,7 +105,12 @@ class VersionManager:
             except requests.exceptions.HTTPError as e:
                 print(e)
                 return
-            version.hash = response.json()["downloads"]["server:default"]["checksums"]["sha256"]
+            hex_hash = response.json()["downloads"]["server:default"]["checksums"]["sha256"]
+            raw_bytes = bytes.fromhex(hex_hash)
+            
+            base64_encoded = base64.b64encode(raw_bytes).decode('utf-8')
+            
+            version.hash  = f"sha256-{base64_encoded}"
 
 
     def versions_to_json(self):
